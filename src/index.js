@@ -3,6 +3,7 @@ import { handleStatusCommand, handleClearCommand, handleSetDataCommand } from ".
 import { handlePhotoCommand, handleDefaultText, handleImageCommand } from "./assistant/assistant";
 import { saveUserData, saveMessage } from "./assistant/assistant_db";
 import { restrictAccess, handleUserResponse } from "./utils/access";
+import { handleStreakCommand } from "./streaks/streak_h";
 import { processReaction } from "./utils/reactions";
 import { setMessageReaction } from "./utils/utils";
 import { processQuery } from "./callback";
@@ -76,6 +77,7 @@ async function handleTextCommand(env, TELEGRAM_URL, message, admins) {
 		'/broadcast': () => handleBroadcastCommand(env, TELEGRAM_URL, message, admins),
 		'/start': () => handleStartCommand(env, TELEGRAM_URL, message),
 		'/help': () => handleHelpCommand(env, TELEGRAM_URL, message),
+		'/streak': () => handleStreakCommand(env.DB, TELEGRAM_URL, message),
 	};
 
 	const command = Object.keys(commandHandlers).find((cmd) => text.startsWith(cmd));
