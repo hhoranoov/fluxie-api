@@ -1,0 +1,1 @@
+export async function processQuery(env, TELEGRAM_URL, callbackQuery) { }
