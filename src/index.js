@@ -4,6 +4,7 @@ import { handleStatusCommand, handleClearCommand, handleSetDataCommand } from ".
 import { handlePhotoCommand, handleDefaultText, handleImageCommand } from "./assistant/assistant";
 import { saveUserData, saveMessage } from "./assistant/assistant_db";
 import { restrictAccess, handleUserResponse } from "./utils/access";
+import { handleUniversityCommand } from "./university/university";
 import { handleStreakCommand } from "./streaks/streak_h";
 import { processReaction } from "./utils/reactions";
 import { setMessageReaction } from "./utils/utils";
@@ -83,6 +84,7 @@ async function handleTextCommand(env, TELEGRAM_URL, message, admins) {
     '/today': () => handleTodayCommand(env.DB, TELEGRAM_URL, message),
     '/tasks': () => handleTasksCommand(env.DB, TELEGRAM_URL, message),
     '/stats': () => handleStatsCommand(env.DB, TELEGRAM_URL, message),
+		'/university': () => handleUniversityCommand(env.DB, TELEGRAM_URL, message),
 	};
 
 	const command = Object.keys(commandHandlers).find((cmd) => text.startsWith(cmd));
