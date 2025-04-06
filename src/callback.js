@@ -1,5 +1,7 @@
+import { handleTaskType, getWeekNumber, sortTasksByTime, handleViewTasks, handleViewTasksButtons } from "./tasks/tasks";
 import { answerCallbackQuery, editTelegramMessage } from "./utils/utils";
 import { handleHelpCommand } from "./tech/tech_h";
+import { getTasks } from "./tasks/tasks_db";
 
 export async function processQuery(env, TELEGRAM_URL, callbackQuery) {
 	const chatId = callbackQuery.message.chat.id;
@@ -58,6 +60,106 @@ export async function processQuery(env, TELEGRAM_URL, callbackQuery) {
 		});
 	} else if (data === 'help') {
 		await handleHelpCommand(env, TELEGRAM_URL, callbackQuery.message, false);
+	} else if (data.startsWith('type_')) {
+		const parts = data.split('_');
+		const dayArg = parts[1];
+		const timeArg = parts[2];
+		const task = parts.slice(3, -1).join(' ');
+		const taskType = parts[parts.length - 1];
+		await handleTaskType(db, TELEGRAM_URL, chatId, dayArg, timeArg, task, taskType);
+	} else if (data.startsWith('task_')) {
+		const parts = data.split('_');
+		const viewDay = parts[1];
+		const taskIndex = parseInt(parts[2], 10);
+		let tasks = await getTasks(db, chatId);
+		const tasksForDay = tasks[viewDay] || [];
+		const filteredTasks = tasksForDay.filter((task) => {
+			if (task.type === 'recursive') {
+				return true;
+			}
+			return task.week === getWeekNumber(new Date());
+		});
+		const sortedTasks = sortTasksByTime(filteredTasks);
+		if (taskIndex >= 0 && taskIndex < sortedTasks.length) {
+			const taskInfo = sortedTasks[taskIndex];
+			const toggleStatusText = taskInfo.status === 'Не виконано' ? '✅ Виконано' : '❌ Не виконано';
+			const inlineKeyboard = {
+				inline_keyboard: [
+					[
+						{ text: toggleStatusText, callback_data: `toggle_${viewDay}_${taskIndex}` },
+						{ text: '🗑️ Видалити', callback_data: `delete_${viewDay}_${taskIndex}` },
+					],
+					[{ text: 'Назад', callback_data: `back_${viewDay}` }],
+				],
+			};
+			const messageText = `Завдання: *${taskInfo.task}*\nЧас: *${taskInfo.time}*\nСтатус: *${
+				taskInfo.status === 'Не виконано' ? '❌' : '✅'
+			}*`;
+			await editTelegramMessage(TELEGRAM_URL, chatId, messageId, messageText, { reply_markup: inlineKeyboard, parse_mode: 'Markdown' });
+		} else {
+			await sendMessage(TELEGRAM_URL, chatId, 'Завдання не знайдено 🔍');
+		}
+	} else if (data.startsWith('toggle_')) {
+		const parts = data.split('_');
+		const viewDay = parts[1];
+		const taskIndex = parseInt(parts[2], 10);
+		let tasks = await getTasks(db, chatId);
+		const tasksForDay = tasks[viewDay] || [];
+		const filteredTasks = tasksForDay.filter((task) => {
+			if (task.type === 'recursive') {
+				return true;
+			}
+			return task.week === getWeekNumber(new Date());
+		});
+		const sortedTasks = sortTasksByTime(filteredTasks);
+		if (taskIndex >= 0 && taskIndex < sortedTasks.length) {
+			const taskInfo = sortedTasks[taskIndex];
+			taskInfo.status = taskInfo.status === 'Не виконано' ? 'Виконано' : 'Не виконано';
+			if (taskInfo.status === 'Виконано') {
+				taskInfo.completed_at = new Date().toISOString();
+				taskInfo.last_completed_at = new Date().toISOString();
+			}
+			await db
+				.prepare('UPDATE tasks SET status = ?, completed_at = ?, last_completed_at = ? WHERE id = ?')
+				.bind(taskInfo.status, taskInfo.completed_at, taskInfo.last_completed_at, taskInfo.id)
+				.run();
+			await handleViewTasks(db, TELEGRAM_URL, chatId, viewDay, messageId);
+		} else {
+			await sendMessage(TELEGRAM_URL, chatId, 'Завдання не знайдено 🔍');
+		}
+	} else if (data.startsWith('delete_')) {
+		const parts = data.split('_');
+		const viewDay = parts[1];
+		const taskIndex = parseInt(parts[2], 10);
+		let tasks = await getTasks(db, chatId);
+		const tasksForDay = tasks[viewDay] || [];
+		const filteredTasks = tasksForDay.filter((task) => {
+			if (task.type === 'recursive') {
+				return true;
+			}
+			return task.week === getWeekNumber(new Date());
+		});
+		const sortedTasks = sortTasksByTime(filteredTasks);
+		if (taskIndex >= 0 && taskIndex < sortedTasks.length) {
+			const taskInfo = sortedTasks[taskIndex];
+			await db.prepare('DELETE FROM tasks WHERE id = ?').bind(taskInfo.id).run();
+			await handleViewTasks(db, TELEGRAM_URL, chatId, viewDay, messageId);
+		} else {
+			await sendMessage(TELEGRAM_URL, chatId, 'Завдання не знайдено 🔍');
+		}
+	} else if (data.startsWith('refresh_')) {
+		const parts = data.split('_');
+		const viewDay = parts[1];
+		await handleViewTasksButtons(db, TELEGRAM_URL, chatId, viewDay, messageId);
+	} else if (data.startsWith('back_')) {
+		const parts = data.split('_');
+		const viewDay = parts[1];
+		await handleViewTasks(db, TELEGRAM_URL, chatId, viewDay, messageId);
+	} else if (data.startsWith('delete_all_')) {
+		const parts = data.split('_');
+		const viewDay = parts[1];
+		await db.prepare('DELETE FROM tasks WHERE chat_id = ? AND day = ?').bind(chatId, viewDay).run();
+		await handleViewTasks(db, TELEGRAM_URL, chatId, viewDay, messageId);
 	} else {
 		console.error('Unknown callback data:', data);
 	}
