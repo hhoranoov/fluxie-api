@@ -1,0 +1,16 @@
+{
+	"name": "fluxie-api",
+	"version": "0.0.0",
+	"private": true,
+	"scripts": {
+		"deploy": "wrangler deploy",
+		"dev": "wrangler dev",
+		"webhook": "node src/tech/webhook.js",
+		"database": "wrangler d1 execute fluxie-api-db --file src/tech/database.sql --remote"
+	},
+	"devDependencies": {
+		"@cloudflare/vitest-pool-workers": "^0.7.5",
+		"vitest": "~3.0.7",
+		"wrangler": "^4.7.2"
+	}
+}
