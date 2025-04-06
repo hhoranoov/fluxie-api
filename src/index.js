@@ -81,9 +81,9 @@ async function handleTextCommand(env, TELEGRAM_URL, message, admins) {
 		'/help': () => handleHelpCommand(env, TELEGRAM_URL, message),
 		'/streak': () => handleStreakCommand(env.DB, TELEGRAM_URL, message),
 		'/add': () => handleAddCommand(env.DB, TELEGRAM_URL, message),
-    '/today': () => handleTodayCommand(env.DB, TELEGRAM_URL, message),
-    '/tasks': () => handleTasksCommand(env.DB, TELEGRAM_URL, message),
-    '/stats': () => handleStatsCommand(env.DB, TELEGRAM_URL, message),
+		'/today': () => handleTodayCommand(env.DB, TELEGRAM_URL, message),
+		'/tasks': () => handleTasksCommand(env.DB, TELEGRAM_URL, message),
+		'/stats': () => handleStatsCommand(env.DB, TELEGRAM_URL, message),
 		'/university': () => handleUniversityCommand(env.DB, TELEGRAM_URL, message),
 	};
 
