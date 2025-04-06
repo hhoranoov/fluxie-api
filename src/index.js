@@ -1,3 +1,4 @@
+import { handleIdCommand, handleSettingsCommand, handleBroadcastCommand, handleStartCommand, handleHelpCommand } from "./tech/tech_h";
 import { handleStatusCommand, handleClearCommand, handleSetDataCommand } from "./assistant/assistant_h";
 import { handlePhotoCommand, handleDefaultText, handleImageCommand } from "./assistant/assistant";
 import { saveUserData, saveMessage } from "./assistant/assistant_db";
@@ -70,6 +71,11 @@ async function handleTextCommand(env, TELEGRAM_URL, message, admins) {
 		'/remember': () => handleSetDataCommand(env.DB, TELEGRAM_URL, message),
 		'/clear': () => handleClearCommand(env.DB, TELEGRAM_URL, message),
 		'/status': () => handleStatusCommand(env, TELEGRAM_URL, message),
+		'/id': () => handleIdCommand(env, TELEGRAM_URL, message),
+		'/settings': () => handleSettingsCommand(env, TELEGRAM_URL, message),
+		'/broadcast': () => handleBroadcastCommand(env, TELEGRAM_URL, message, admins),
+		'/start': () => handleStartCommand(env, TELEGRAM_URL, message),
+		'/help': () => handleHelpCommand(env, TELEGRAM_URL, message),
 	};
 
 	const command = Object.keys(commandHandlers).find((cmd) => text.startsWith(cmd));
