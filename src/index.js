@@ -81,7 +81,7 @@ export async function handleTextCommand(env, TELEGRAM_URL, message) {
 			await sendMessage(TELEGRAM_URL, chatID, '⚠️ Неправильна команда. Формат:\n/grant ID [user|admin]');
 			return;
 		}
-		await addUser(env.DB, id, role);
+		await addUser(env.DB, id, role);  // Додаємо користувача через addUser
 		await sendMessage(TELEGRAM_URL, chatID, `✅ Користувача ${id} додано як ${role}.`);
 		return;
 	}

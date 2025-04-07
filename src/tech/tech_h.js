@@ -162,22 +162,27 @@ export async function handleHelpCommand(env, TELEGRAM_URL, message, shouldDelete
 	}
 }
 
-// 5. Функція налаштувань
 export async function handleSettingsCommand(env, TELEGRAM_URL, message) {
 	const userId = message.from.id;
-	const userData = await getUserData(env.DB, userId);
-	const userName = userData?.first_name || 'Невідомий';
-	const registrationDate = userData?.registration_date || 'Дата відсутня';
+	const userData = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(userId).first();
+	const userDB = await getUserData(env.DB, userId);
+	const userName = userDB?.first_name || 'Невідомий';
+	const isOwner = userId === parseInt(env.OWNER_ID);
+	const registrationDate = isOwner ? '∞∞:∞∞' : (userData?.registration_date || 'Дата відсутня');
 	const stats = await env.DB.prepare('SELECT * FROM user_stats WHERE user_id = ?').bind(userId).first();
 	const textStats = stats?.text_requests || 0;
 	const imageGenStats = stats?.generated_images || 0;
 	const imageRecStats = stats?.recognized_images || 0;
 
+	const roleFromDb = userData?.role;
+	const roleLabel = isOwner || roleFromDb === 'admin' ? 'Адмін' : 'Користувач';
+
 	const settingsMessage =
 		`🛠 *Ваш профіль:*\n\n` +
 		`👤 Ім'я: ${userName}\n` +
 		`🆔 ID: \`${userId}\`\n` +
-		`📅 Дата реєстрації: ${registrationDate}\n\n` +
+		`📅 Дата реєстрації: ${registrationDate}\n` +
+		`🔐 Роль: *${roleLabel}*\n\n` +
 		`📊 *Статистика:*\n` +
 		`📝 Текстових запитів: ${textStats}\n` +
 		`🎨 Згенерованих зображень: ${imageGenStats}\n` +

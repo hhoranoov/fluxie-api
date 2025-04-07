@@ -37,10 +37,19 @@ export async function handleUserResponse(TELEGRAM_URL, message) {
   }
 }
 
+export async function addUser(db, userId, role = 'user') {
+	const userExists = await db.prepare('SELECT * FROM users WHERE id = ?').bind(userId).first();
 
-
-export async function addUser(DB, id, role = 'user') {
-  await DB.prepare(`INSERT OR REPLACE INTO users (id, role) VALUES (?, ?)`).bind(id, role).run();
+	if (!userExists) {
+		await db.prepare(`
+			INSERT INTO users (id, role, registration_date)
+			VALUES (?, ?, datetime('now'))
+		`).bind(userId, role).run();
+	} else {
+		await db.prepare(`
+			UPDATE users SET role = ? WHERE id = ?
+		`).bind(role, userId).run();
+	}
 }
 
 export async function removeUser(DB, id) {
