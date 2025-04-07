@@ -1,5 +1,6 @@
 import { saveMessage, getUserData } from '../assistant/assistant_db';
 import { sendMessage, deleteMessage } from '../utils/utils';
+import { getUserRole } from '../utils/access';
 
 // 1. Функція для отримання ID
 export async function handleIdCommand(env, TELEGRAM_URL, message) {
@@ -16,10 +17,13 @@ export async function handleIdCommand(env, TELEGRAM_URL, message) {
 }
 
 // 2. Функція для розсилки повідомлень
-export async function handleBroadcastCommand(env, TELEGRAM_URL, message, admins) {
+export async function handleBroadcastCommand(env, TELEGRAM_URL, message) {
 	try {
 		const senderID = message.from.id;
-		if (!admins.includes(senderID)) {
+		const role = await getUserRole(env.DB, senderID);
+		const isOwner = senderID === parseInt(env.OWNER_ID);
+
+		if (role !== 'admin' && !isOwner) {
 			return await sendMessage(TELEGRAM_URL, message.chat.id, '❌ У вас немає прав для розсилки повідомлень.');
 		}
 
@@ -90,12 +94,12 @@ export async function handleStartCommand(env, TELEGRAM_URL, message) {
 				},
 				{ text: '❓ Допомога', callback_data: 'help' },
 			],
-      [
-        {
+			[
+				{
 					text: '🇺🇦 На ЗСУ',
 					url: 'https://savelife.in.ua/projects/status/active/',
 				}
-      ]
+			]
 		],
 	};
 

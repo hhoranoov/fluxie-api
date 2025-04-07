@@ -1,13 +1,13 @@
 import { handleIdCommand, handleSettingsCommand, handleBroadcastCommand, handleStartCommand, handleHelpCommand } from "./tech/tech_h";
 import { handleAddCommand, handleTodayCommand, handleTasksCommand, handleStatsCommand } from "./tasks/tasks_h";
 import { handleStatusCommand, handleClearCommand, handleSetDataCommand } from "./assistant/assistant_h";
+import { restrictAccess, handleUserResponse, addUser, removeUser, getUserRole } from "./utils/access";
 import { handlePhotoCommand, handleDefaultText, handleImageCommand } from "./assistant/assistant";
 import { saveUserData, saveMessage } from "./assistant/assistant_db";
-import { restrictAccess, handleUserResponse } from "./utils/access";
 import { handleUniversityCommand } from "./university/university";
+import { setMessageReaction, sendMessage } from "./utils/utils";
 import { handleStreakCommand } from "./streaks/streak_h";
 import { processReaction } from "./utils/reactions";
-import { setMessageReaction } from "./utils/utils";
 import { processQuery } from "./callback";
 
 // Дефолт
@@ -33,22 +33,24 @@ export default {
 
 // Обробка повідомлень
 export async function processMessage(env, TELEGRAM_URL, message) {
-	const allowedUsers = JSON.parse(env.USERS || '[]');
-	const admins = Array.isArray(env.ADMINS) ? env.ADMINS : JSON.parse(env.ADMINS || '[]');
+	const ownerID = parseInt(env.OWNER_ID);
 
-	if (!message.text?.startsWith('/id') && !(await restrictAccess(TELEGRAM_URL, message, allowedUsers))) return;
+	if (!message.text?.startsWith('/id') &&
+		!(await restrictAccess(env.DB, TELEGRAM_URL, message, ownerID))) return;
 
 	const isGroupChat = ['group', 'supergroup'].includes(message?.chat?.type);
 	const botUsername = 'fluxie_bot';
 	const triggerWords = ['Флюксі', 'Флю', 'Ксі', 'Fluxie', 'Flu', 'Xie'];
 	const lowerText = message?.text?.toLowerCase() || '';
 	const lowerCaption = message?.caption?.toLowerCase() || '';
-	const hasTrigger = triggerWords.some((word) => lowerText.includes(word) || lowerCaption.includes(word));
+	const hasTrigger = triggerWords.some(word => lowerText.includes(word) || lowerCaption.includes(word));
 	const isBotReplied = message?.reply_to_message?.from?.username === botUsername;
 	const shouldRespond = !isGroupChat || hasTrigger || isBotReplied;
 
 	const reaction = processReaction(message);
-	if (reaction) await setMessageReaction(TELEGRAM_URL, message.chat.id, message.message_id, reaction);
+	if (reaction) {
+		await setMessageReaction(TELEGRAM_URL, message.chat.id, message.message_id, reaction);
+	}
 
 	if (!shouldRespond) return;
 
@@ -58,7 +60,7 @@ export async function processMessage(env, TELEGRAM_URL, message) {
 
 	if (message?.text) {
 		await saveMessage(env.DB, message.from.id, message.chat.id, 'user', message.text);
-		await handleTextCommand(env, TELEGRAM_URL, message, admins);
+		await handleTextCommand(env, TELEGRAM_URL, message, ownerID);
 	} else if (message?.photo) {
 		await handlePhotoCommand(env, TELEGRAM_URL, message);
 	} else {
@@ -66,8 +68,36 @@ export async function processMessage(env, TELEGRAM_URL, message) {
 	}
 }
 
-async function handleTextCommand(env, TELEGRAM_URL, message, admins) {
+export async function handleTextCommand(env, TELEGRAM_URL, message) {
 	const text = message.text.toLowerCase();
+	const chatID = message.chat.id;
+	const fromID = message.from.id;
+	const ownerID = parseInt(env.OWNER_ID);
+
+	if (fromID === ownerID && text.startsWith('/grant')) {
+		const [, idStr, role = 'user'] = message.text.split(' ');
+		const id = parseInt(idStr);
+		if (!id || !['user', 'admin'].includes(role)) {
+			await sendMessage(TELEGRAM_URL, chatID, '⚠️ Неправильна команда. Формат:\n/grant ID [user|admin]');
+			return;
+		}
+		await addUser(env.DB, id, role);
+		await sendMessage(TELEGRAM_URL, chatID, `✅ Користувача ${id} додано як ${role}.`);
+		return;
+	}
+
+	if (fromID === ownerID && text.startsWith('/revoke')) {
+		const [, idStr] = message.text.split(' ');
+		const id = parseInt(idStr);
+		if (!id) {
+			await sendMessage(TELEGRAM_URL, chatID, '⚠️ Неправильна команда. Формат:\n/revoke ID');
+			return;
+		}
+		await removeUser(env.DB, id);
+		await sendMessage(TELEGRAM_URL, chatID, `🚫 Користувача ${id} видалено.`);
+		return;
+	}
+
 	const commandHandlers = {
 		'/gen': () => handleImageCommand(env, TELEGRAM_URL, message),
 		згенеруй: () => handleImageCommand(env, TELEGRAM_URL, message),
@@ -76,7 +106,6 @@ async function handleTextCommand(env, TELEGRAM_URL, message, admins) {
 		'/status': () => handleStatusCommand(env, TELEGRAM_URL, message),
 		'/id': () => handleIdCommand(env, TELEGRAM_URL, message),
 		'/settings': () => handleSettingsCommand(env, TELEGRAM_URL, message),
-		'/broadcast': () => handleBroadcastCommand(env, TELEGRAM_URL, message, admins),
 		'/start': () => handleStartCommand(env, TELEGRAM_URL, message),
 		'/help': () => handleHelpCommand(env, TELEGRAM_URL, message),
 		'/streak': () => handleStreakCommand(env.DB, TELEGRAM_URL, message),
@@ -86,6 +115,18 @@ async function handleTextCommand(env, TELEGRAM_URL, message, admins) {
 		'/stats': () => handleStatsCommand(env.DB, TELEGRAM_URL, message),
 		'/university': () => handleUniversityCommand(env.DB, TELEGRAM_URL, message),
 	};
+
+	if (text.startsWith('/broadcast')) {
+		const role = await getUserRole(env.DB, fromID);
+		const isOwner = fromID === ownerID;
+
+		if (role === 'admin' || isOwner) {
+			await handleBroadcastCommand(env, TELEGRAM_URL, message);
+		} else {
+			await sendMessage(TELEGRAM_URL, chatID, '⛔ У вас немає прав для цієї команди.');
+		}
+		return;
+	}
 
 	const command = Object.keys(commandHandlers).find((cmd) => text.startsWith(cmd));
 	if (command) {
