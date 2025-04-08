@@ -1,11 +1,16 @@
-// Базовий запит до телеграм АПІ
+// Базовий запит
 async function sendTelegramRequest(TELEGRAM_URL, method, payload) {
   const response = await fetch(`${TELEGRAM_URL}/${method}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
+
+  if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+  
   const data = await response.json();
+  if (!data.ok) throw new Error(`Telegram API error: ${data.description}`);
+
   return data.result || data;
 }
 
@@ -21,11 +26,7 @@ export async function editTelegramMessage(TELEGRAM_URL, chatId, messageId, text,
 
 // Видалення повідомлення
 export async function deleteMessage(TELEGRAM_URL, chatId, messageId) {
-  try {
-    await sendTelegramRequest(TELEGRAM_URL, 'deleteMessage', { chat_id: chatId, message_id: messageId });
-  } catch (error) {
-    console.error('Не вдалося видалити повідомлення:', error);
-  }
+  await sendTelegramRequest(TELEGRAM_URL, 'deleteMessage', { chat_id: chatId, message_id: messageId });
 }
 
 // Надсилання фотографії
@@ -33,16 +34,14 @@ export async function sendPhoto(TELEGRAM_URL, chatId, photoUrl, caption = '') {
   return sendTelegramRequest(TELEGRAM_URL, 'sendPhoto', { chat_id: chatId, photo: photoUrl, caption });
 }
 
-// Отримання файлу
-export async function getFile(TELEGRAM_URL, fileId) {
-  const response = await fetch(`${TELEGRAM_URL}/getFile?file_id=${fileId}`);
-  const data = await response.json();
-  return data.result;
-}
-
 // Надсилання дії
 export async function sendChatAction(TELEGRAM_URL, chatId, action) {
   return sendTelegramRequest(TELEGRAM_URL, 'sendChatAction', { chat_id: chatId, action });
+}
+
+// Отримання файлу через базовий запит
+export async function getFile(TELEGRAM_URL, fileId) {
+  return sendTelegramRequest(TELEGRAM_URL, 'getFile', { file_id: fileId });
 }
 
 // Відповідь на кнопках

@@ -1,3 +1,4 @@
+// Налаштування вебхука
 async function setWebhook(env) {
   try {
     const res = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_TOKEN}/setWebhook`, {

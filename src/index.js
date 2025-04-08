@@ -1,8 +1,8 @@
 import { handleIdCommand, handleSettingsCommand, handleBroadcastCommand, handleStartCommand, handleHelpCommand } from "./tech/tech_h";
 import { handleAddCommand, handleTodayCommand, handleTasksCommand, handleStatsCommand } from "./tasks/tasks_h";
 import { handleStatusCommand, handleClearCommand, handleSetDataCommand } from "./assistant/assistant_h";
-import { restrictAccess, handleUserResponse, addUser, removeUser, getUserRole } from "./utils/access";
 import { handlePhotoCommand, handleDefaultText, handleImageCommand } from "./assistant/assistant";
+import { restrictAccess, addUser, removeUser, getUserRole } from "./utils/access";
 import { saveUserData, saveMessage } from "./assistant/assistant_db";
 import { handleUniversityCommand } from "./university/university";
 import { setMessageReaction, sendMessage } from "./utils/utils";
@@ -63,11 +63,10 @@ export async function processMessage(env, TELEGRAM_URL, message) {
 		await handleTextCommand(env, TELEGRAM_URL, message, ownerID);
 	} else if (message?.photo) {
 		await handlePhotoCommand(env, TELEGRAM_URL, message);
-	} else {
-		await handleUserResponse(TELEGRAM_URL, message);
 	}
 }
 
+// Обробка команд
 export async function handleTextCommand(env, TELEGRAM_URL, message) {
 	const text = message.text.toLowerCase();
 	const chatID = message.chat.id;
@@ -81,7 +80,7 @@ export async function handleTextCommand(env, TELEGRAM_URL, message) {
 			await sendMessage(TELEGRAM_URL, chatID, '⚠️ Неправильна команда. Формат:\n/grant ID [user|admin]');
 			return;
 		}
-		await addUser(env.DB, id, role);  // Додаємо користувача через addUser
+		await addUser(env.DB, id, role);
 		await sendMessage(TELEGRAM_URL, chatID, `✅ Користувача ${id} додано як ${role}.`);
 		return;
 	}

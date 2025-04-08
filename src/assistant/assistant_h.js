@@ -2,7 +2,7 @@ import { deleteChatHistory, saveMessage, saveUserData } from '../assistant/assis
 import { checkServicesAvailability } from '../assistant/assistant';
 import { sendMessage } from '../utils/utils';
 
-// 1. Функція для перевірки статусу
+// Перевірка статусу
 export async function handleStatusCommand(env, TELEGRAM_URL, message) {
   const status = await checkServicesAvailability();
   const reply = `
@@ -19,13 +19,13 @@ _Переконайтеся, що всі сервіси працюють нал�
   await saveMessage(env.DB, message.from.id, message.chat.id, 'bot', reply);
 }
 
-// 2. Функція для видалення історії
+// Видалення історії
 export async function handleClearCommand(db, TELEGRAM_URL, message) {
   const result = await deleteChatHistory(db, message.chat.id);
   await sendMessage(TELEGRAM_URL, message.chat.id, result.message);
 }
 
-// 3. Функція додавання важливої інформації
+// Додавання важливої інформації
 export async function handleSetDataCommand(db, TELEGRAM_URL, message) {
   const data = message.text.substring(8).trim();
   if (!data) {

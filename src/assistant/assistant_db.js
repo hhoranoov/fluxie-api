@@ -1,4 +1,4 @@
-// 1. Функція фільтрування історії
+// Фільтрування історії
 export async function getFilteredHistory(db, chatId) {
 	const result = await db
 		.prepare('SELECT sender, text, media_url FROM messages WHERE chat_id = ? ORDER BY id DESC LIMIT 100')
@@ -24,7 +24,7 @@ export async function getFilteredHistory(db, chatId) {
 	return [];
 }
 
-// 2. Функція видалення історії чату
+// Видалення історії чату
 export async function deleteChatHistory(db, chatId) {
 	try {
 		await db.prepare('DELETE FROM messages WHERE chat_id = ?').bind(chatId).run();
@@ -35,7 +35,7 @@ export async function deleteChatHistory(db, chatId) {
 	}
 }
 
-// 3. Функція для збереження історії
+// Збереження історії
 export async function saveUserData(db, userId, data) {
 	const existingData = await getUserData(db, userId);
 	if (!existingData) {
@@ -46,13 +46,13 @@ export async function saveUserData(db, userId, data) {
 	}
 }
 
-// 4. Функція для отримання історії
+// Отримання історії
 export async function getUserData(db, userId) {
 	const result = await db.prepare('SELECT data FROM user_data WHERE user_id = ?').bind(userId).first();
 	return result?.data ? JSON.parse(result.data) : null;
 }
 
-// 5. Функція збереження повідомлення
+// Збереження повідомлення
 export async function saveMessage(db, userId, chatId, sender, text, mediaUrl = null) {
 	if (mediaUrl) {
 		await db
@@ -64,7 +64,7 @@ export async function saveMessage(db, userId, chatId, sender, text, mediaUrl = n
 	}
 }
 
-// 6. Функція статистики
+// Функція статистики
 export async function updateUserStats(db, userId, statType) {
 	await db
 		.prepare(

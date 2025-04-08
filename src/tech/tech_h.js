@@ -2,7 +2,7 @@ import { saveMessage, getUserData } from '../assistant/assistant_db';
 import { sendMessage, deleteMessage } from '../utils/utils';
 import { getUserRole } from '../utils/access';
 
-// 1. Функція для отримання ID
+// Отримання ID
 export async function handleIdCommand(env, TELEGRAM_URL, message) {
 	let reply;
 
@@ -16,7 +16,7 @@ export async function handleIdCommand(env, TELEGRAM_URL, message) {
 	await saveMessage(env.DB, message.from.id, message.chat.id, 'bot', reply);
 }
 
-// 2. Функція для розсилки повідомлень
+// Розсилка повідомлень
 export async function handleBroadcastCommand(env, TELEGRAM_URL, message) {
 	try {
 		const senderID = message.from.id;
@@ -65,7 +65,7 @@ export async function handleBroadcastCommand(env, TELEGRAM_URL, message) {
 	}
 }
 
-// 3. Функція старту
+// Команда старту
 export async function handleStartCommand(env, TELEGRAM_URL, message) {
 	const chatId = message.chat.id;
 	const command = 'start';
@@ -114,7 +114,7 @@ export async function handleStartCommand(env, TELEGRAM_URL, message) {
 	await deleteMessage(TELEGRAM_URL, chatId, message.message_id);
 }
 
-// 4. Функція допомоги
+// Команда допомоги
 export async function handleHelpCommand(env, TELEGRAM_URL, message, shouldDeleteOriginalMessage = true) {
 	const chatId = message.chat.id;
 	const command = 'help';
@@ -162,6 +162,7 @@ export async function handleHelpCommand(env, TELEGRAM_URL, message, shouldDelete
 	}
 }
 
+// Команда налаштувань
 export async function handleSettingsCommand(env, TELEGRAM_URL, message) {
 	const userId = message.from.id;
 	const userData = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(userId).first();

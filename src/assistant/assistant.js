@@ -1,7 +1,7 @@
 import { getFilteredHistory, getUserData, saveMessage, updateUserStats } from './assistant_db';
 import { sendMessage, getFile, sendChatAction } from '../utils/utils';
 
-// 1. Функція текстової генерації
+// Текстова генерація
 export async function handleDefaultText(db, TELEGRAM_URL, message) {
 	if (message.text.startsWith('/')) {
 		return;
@@ -43,7 +43,7 @@ export async function handleDefaultText(db, TELEGRAM_URL, message) {
 	}
 }
 
-// 2. Функція генерації зображень
+// Генерація зображень
 export async function handleImageCommand(env, TELEGRAM_URL, message) {
 	await updateUserStats(env.DB, message.from.id, 'generated_images');
 
@@ -55,7 +55,7 @@ export async function handleImageCommand(env, TELEGRAM_URL, message) {
 		return await sendMessage(TELEGRAM_URL, message.chat.id, '🖼 Будь ласка, надайте промпт для генерації картинки.');
 	}
 
-	const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptText)}`;
+	const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptText)}?nologo=true`;
 	const caption = `📸 Згенеровано за промптом: ${promptText}`;
 
 	try {
@@ -104,7 +104,7 @@ export async function handleImageCommand(env, TELEGRAM_URL, message) {
 	}
 }
 
-// 3. Функція розпізнавання зображень
+// Розпізнавання зображень
 export async function handlePhotoCommand(env, TELEGRAM_URL, message) {
 	if (!message.photo) {
 		return;
@@ -148,7 +148,7 @@ export async function handlePhotoCommand(env, TELEGRAM_URL, message) {
 	}
 }
 
-// 4. Функція перевірки статусу ШІ сервісів
+// Перевірки статусу
 export async function checkServicesAvailability() {
 	const urls = [
 		['textGeneration', 'https://text.pollinations.ai/openai'],

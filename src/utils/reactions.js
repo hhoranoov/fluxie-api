@@ -1,4 +1,4 @@
-// Встановлення реакцій на повідомлення
+// Реакції на повідомлення
 export function processReaction(message) {
   if (Math.random() > 0.4) return null;
 
