@@ -1,7 +1,7 @@
 import { sendMessage, editTelegramMessage } from '../utils/utils';
 import { saveTasks, getTasks } from './tasks_db';
 
-// 1. Функція додавання завдання
+// Додавання завдань
 export async function handleAddTask(db, TELEGRAM_URL, chatId, dayArg, timeArg, task) {
   if (!dayArg || !timeArg || !task) {
     return sendMessage(TELEGRAM_URL, chatId, 'Неправильний формат команди. Використовуйте /add <день> <час> <завдання>');
@@ -16,7 +16,7 @@ export async function handleAddTask(db, TELEGRAM_URL, chatId, dayArg, timeArg, t
   await sendMessage(TELEGRAM_URL, chatId, 'Оберіть тип завдання:', { reply_markup: inlineKeyboard });
 }
 
-// 2. Функція для типу завдання
+// Вибір типу завдань
 export async function handleTaskType(db, TELEGRAM_URL, chatId, dayArg, timeArg, task, taskType) {
   const currentWeek = getWeekNumber(new Date());
   const newTask = {
@@ -51,13 +51,14 @@ export async function handleTaskType(db, TELEGRAM_URL, chatId, dayArg, timeArg, 
   await sendMessage(TELEGRAM_URL, chatId, 'Завдання додано! ✅');
 }
 
-// 3. Функція перегляду завдань
+// Перегляд завдань
 export async function handleViewTasks(db, TELEGRAM_URL, chatId, viewDay = 'today', messageId = null) {
   let tasks = await getTasks(db, chatId);
   tasks = resetRecursiveTasks(tasks);
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
   const currentWeek = getWeekNumber(new Date());
-  const formattedDate = new Date().toLocaleDateString('uk-UA');
+  const targetDate = getDateForWeekday(viewDay);
+  const formattedDate = targetDate.toLocaleDateString('uk-UA');
   if (viewDay.toLowerCase() === 'today') {
     viewDay = today;
   } else {
@@ -93,7 +94,7 @@ export async function handleViewTasks(db, TELEGRAM_URL, chatId, viewDay = 'today
   await saveTasks(db, chatId, tasks);
 }
 
-// 4. Функція перегляду завдань (кнопки)
+// Перегляд завдань (кнопки)
 export async function handleViewTasksButtons(db, TELEGRAM_URL, chatId, viewDay, messageId) {
   let tasks = await getTasks(db, chatId);
   const tasksForDay = tasks[viewDay] || [];
@@ -129,7 +130,7 @@ export async function handleViewTasksButtons(db, TELEGRAM_URL, chatId, viewDay, 
   }
 }
 
-// 5. Функція скидання прогресу
+// Скидання прогресу
 export function resetRecursiveTasks(tasks) {
   const now = new Date();
   const currentWeek = getWeekNumber(now);
@@ -147,7 +148,7 @@ export function resetRecursiveTasks(tasks) {
   return tasks;
 }
 
-// 6. Функція отримання статистики
+// Отримання статистики
 export async function handleStats(db, TELEGRAM_URL, chatId, period) {
   const tasks = await getTasks(db, chatId);
   const now = new Date();
@@ -178,7 +179,7 @@ export async function handleStats(db, TELEGRAM_URL, chatId, period) {
   await sendMessage(TELEGRAM_URL, chatId, statsMessage, { parse_mode: 'Markdown' });
 }
 
-// 7. Функція отримання тижня
+// Отримання тижня
 export function getWeekNumber(date) {
   const startOfYear = new Date(date.getFullYear(), 0, 1);
   const diffTime = date - startOfYear;
@@ -186,7 +187,7 @@ export function getWeekNumber(date) {
   return Math.ceil(diffDays / 7);
 }
 
-// 8. Функція сортування завдань
+// Сортування завдань
 export function sortTasksByTime(tasks) {
   return tasks.sort((a, b) => {
     const timeA = new Date(`1970-01-01T${a.time}:00Z`);
@@ -195,7 +196,21 @@ export function sortTasksByTime(tasks) {
   });
 }
 
-// 9. Функція реєстру
+// Функція реєстру
 function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// Отримання дати
+function getDateForWeekday(targetDayName) {
+  const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const targetDay = daysOfWeek.indexOf(targetDayName.toLowerCase());
+  if (targetDay === -1) return new Date();
+
+  const today = new Date();
+  const todayDay = today.getDay();
+  const diff = (targetDay - todayDay + 7) % 7;
+  const targetDate = new Date(today);
+  targetDate.setDate(today.getDate() + diff);
+  return targetDate;
 }

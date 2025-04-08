@@ -1,4 +1,4 @@
-// 1. Функція отримання завдань
+// Отримання завдань
 export async function getTasks(db, chatId) {
 	const rows = await db.prepare('SELECT * FROM tasks WHERE chat_id = ?').bind(chatId).all();
 	const tasks = {};
@@ -20,7 +20,7 @@ export async function getTasks(db, chatId) {
 	return tasks;
 }
 
-// 2. Функція збереження завдань
+// Збереження завдань
 export async function saveTasks(db, chatId, tasks) {
 	await db.prepare('DELETE FROM tasks WHERE chat_id = ?').bind(chatId).run();
 	for (const day in tasks) {
