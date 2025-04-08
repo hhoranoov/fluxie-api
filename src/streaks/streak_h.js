@@ -1,7 +1,7 @@
 import { handleAddStreak, handleCheckStreaks, handleDeleteStreak } from '../streaks/streak';
 import { sendMessage } from '../utils/utils';
 
-// Функція для взаємодії з цілями
+// Взаємодії з цілями
 export async function handleStreakCommand(db, TELEGRAM_URL, message) {
 	const args = message.text.substring(8).trim().split(' ');
 

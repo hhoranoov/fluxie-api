@@ -1,7 +1,7 @@
 import { getUserStreaks, saveUserStreaks } from './streak_db';
 import { sendMessage } from '../utils/utils';
 
-// 1. Функція додавання цілі
+// Додавання цілі
 export async function handleAddStreak(db, TELEGRAM_URL, chatId, goalName) {
 	if (!goalName) {
 		return sendMessage(TELEGRAM_URL, chatId, '⚠️ **Неправильний формат команди!**\nВикористовуйте:\n`/streak add <назва цілі>`', {
@@ -30,7 +30,7 @@ export async function handleAddStreak(db, TELEGRAM_URL, chatId, goalName) {
 	await sendMessage(TELEGRAM_URL, chatId, `✅ **Ціль \`${goalName}\` успішно додана!** 🎉`, { parse_mode: 'Markdown' });
 }
 
-// 2. Функція перевірки цілі
+// Перевірка цілі
 export async function handleCheckStreaks(db, TELEGRAM_URL, chatId) {
 	let streaks = await getUserStreaks(db, chatId);
 
@@ -67,8 +67,7 @@ export async function handleCheckStreaks(db, TELEGRAM_URL, chatId) {
 		const streakDuration = Math.floor((now - startDate) / (1000 * 60 * 60 * 24)) + 1;
 
 		streakMessages.push(
-			`*Ціль:* \`${goalName}\`\n*Старт:* ${startDate.toLocaleDateString()}\n*Поточний streak:* \`${
-				streak.streakCount
+			`*Ціль:* \`${goalName}\`\n*Старт:* ${startDate.toLocaleDateString()}\n*Поточний streak:* \`${streak.streakCount
 			} днів\` (_${streakDuration} днів без перерви_)`
 		);
 	}
@@ -81,7 +80,7 @@ export async function handleCheckStreaks(db, TELEGRAM_URL, chatId) {
 	});
 }
 
-// 3. Функція видалення цілі
+// Видалення цілі
 export async function handleDeleteStreak(db, TELEGRAM_URL, chatId, goalName) {
 	if (!goalName) {
 		return sendMessage(TELEGRAM_URL, chatId, '⚠️ **Неправильний формат команди!**\nВикористовуйте:\n`/streak delete <назва цілі>`', {
