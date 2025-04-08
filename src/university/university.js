@@ -2,9 +2,9 @@ import { addLesson, getLessonsForDay } from './university_db';
 import { sendMessage } from '../utils/utils';
 
 const validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-
 const classTimes = ['9.00 – 10.35', '10.50 – 12.25', '12.45 – 14.20', '14.30 – 16.05', '16.15 – 17.50', '18.00 – 19.35'];
 
+// Функції для керування парами
 export async function handleUniversityCommand(db, TELEGRAM_URL, message) {
 	const chatId = message.chat.id;
 	const args = message.text.split(' ').slice(1);
