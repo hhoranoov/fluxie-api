@@ -1,6 +1,6 @@
 import { handleTaskType, getWeekNumber, sortTasksByTime, handleViewTasks, handleViewTasksButtons } from "./tasks/tasks";
 import { answerCallbackQuery, editTelegramMessage, sendMessage } from "./utils/utils";
-import { getLessonsForDay, deleteLesson} from "./university/university_db"
+import { getLessonsForDay, deleteLesson } from "./university/university_db"
 import { handleHelpCommand } from "./tech/tech_h";
 import { getTasks } from "./tasks/tasks_db";
 
@@ -160,13 +160,53 @@ export async function processQuery(env, TELEGRAM_URL, callbackQuery) {
 		const viewDay = parts[1];
 		await db.prepare('DELETE FROM tasks WHERE chat_id = ? AND day = ?').bind(chatId, viewDay).run();
 		await handleViewTasks(db, TELEGRAM_URL, chatId, viewDay, messageId);
+	} else if (data.startsWith('show_buttons_') || data.startsWith('hide_buttons_')) {
+		const validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+		const classTimes = ['9.00 – 10.35', '10.50 – 12.25', '12.45 – 14.20', '14.30 – 16.05', '16.15 – 17.50', '18.00 – 19.35'];
+
+		const day = data.split('_').slice(-1)[0];
+
+		if (!validDays.includes(day)) {
+			return await sendMessage(TELEGRAM_URL, chatId, '❌ Невірний день.');
+		}
+
+		const lessons = await getLessonsForDay(env.DB, chatId, day);
+
+		if (lessons.length === 0) {
+			await editTelegramMessage(TELEGRAM_URL, chatId, messageId, 'ℹ️ На цьому дні пар немає.');
+			return;
+		}
+
+		let text = `📅 *Розклад на ${day.charAt(0).toUpperCase() + day.slice(1)}:*\n\n`;
+
+		lessons.forEach((l, i) => {
+			text += `🕓 *Пара ${i + 1}:* (${classTimes[i]})\n`;
+			text += `📚 *Предмет*: ${l.subject}\n`;
+			text += `🏫 *Аудиторія*: ${l.room}\n\n`;
+		});
+
+		let buttons;
+
+		if (data.startsWith('show_buttons_')) {
+			buttons = lessons.map((lesson) => [
+				{ text: `❌ Видалити ${lesson.subject} (${lesson.room})`, callback_data: `del_${lesson.id}_${day}` },
+			]);
+			buttons.push([{ text: '◀️ Повернутись', callback_data: `hide_buttons_${day}` }]);
+		} else {
+			buttons = [[{ text: '🔼 Видалити пару', callback_data: `show_buttons_${day}` }]];
+		}
+
+		await editTelegramMessage(TELEGRAM_URL, chatId, messageId, text, {
+			parse_mode: 'Markdown',
+			reply_markup: { inline_keyboard: buttons },
+		});
 	} else if (data.startsWith('del_')) {
-		const [action, lessonId, day] = data.split('_');
+		const [_, lessonId, day] = data.split('_');
 		const validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 		const classTimes = ['9.00 – 10.35', '10.50 – 12.25', '12.45 – 14.20', '14.30 – 16.05', '16.15 – 17.50', '18.00 – 19.35'];
 
 		if (!validDays.includes(day)) {
-			return await sendMessage(TELEGRAM_URL, chatId, '❌ Невірний день. Використовуйте один із: Monday–Sunday.');
+			return await sendMessage(TELEGRAM_URL, chatId, '❌ Невірний день.');
 		}
 
 		await deleteLesson(env.DB, lessonId);
@@ -174,25 +214,26 @@ export async function processQuery(env, TELEGRAM_URL, callbackQuery) {
 		const lessons = await getLessonsForDay(env.DB, chatId, day);
 
 		if (lessons.length === 0) {
-			await editTelegramMessage(TELEGRAM_URL, chatId, messageId, 'ℹ️ На цьому дні пар немає.');
-		} else {
-			let text = `📅 *Розклад на ${day.charAt(0).toUpperCase() + day.slice(1)}:*\n\n`;
-
-			const buttons = lessons.map((lesson) => [
-				{ text: `❌ Видалити ${lesson.subject} (${lesson.room})`, callback_data: `del_${lesson.id}_${day}` },
-			]);
-
-			lessons.forEach((l, i) => {
-				text += `🕓 *Пара ${i + 1}:* (${classTimes[i]})\n`;
-				text += `📚 *Предмет*: ${l.subject}\n`;
-				text += `🏫 *Аудиторія*: ${l.room}\n\n`;
-			});
-
-			await editTelegramMessage(TELEGRAM_URL, chatId, messageId, text, {
-				parse_mode: 'Markdown',
-				reply_markup: { inline_keyboard: buttons },
-			});
+			return await editTelegramMessage(TELEGRAM_URL, chatId, messageId, 'ℹ️ На цьому дні пар немає.');
 		}
+
+		let text = `📅 *Розклад на ${day.charAt(0).toUpperCase() + day.slice(1)}:*\n\n`;
+
+		lessons.forEach((l, i) => {
+			text += `🕓 *Пара ${i + 1}:* (${classTimes[i]})\n`;
+			text += `📚 *Предмет*: ${l.subject}\n`;
+			text += `🏫 *Аудиторія*: ${l.room}\n\n`;
+		});
+
+		const buttons = lessons.map((lesson) => [
+			{ text: `❌ Видалити ${lesson.subject} (${lesson.room})`, callback_data: `del_${lesson.id}_${day}` },
+		]);
+		buttons.push([{ text: '◀️ Повернутись', callback_data: `hide_buttons_${day}` }]);
+
+		await editTelegramMessage(TELEGRAM_URL, chatId, messageId, text, {
+			parse_mode: 'Markdown',
+			reply_markup: { inline_keyboard: buttons },
+		});
 	} else {
 		console.error('Unknown callback data:', data);
 	}

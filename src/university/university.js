@@ -35,9 +35,7 @@ export async function handleUniversityCommand(db, TELEGRAM_URL, message) {
 
 		let text = `📅 *Розклад на ${day.charAt(0).toUpperCase() + day.slice(1)}:*\n\n`;
 
-    const buttons = lessons.map((lesson) => [
-      { text: `❌ Видалити ${lesson.subject} (${lesson.room})`, callback_data: `del_${lesson.id}_${day}` },
-    ]);
+		const buttons = [[{ text: '🔼 Видалити пару', callback_data: `show_buttons_${day}` }]];
 
 		lessons.forEach((l, i) => {
 			text += `🕓 *Пара ${i + 1}:* (${classTimes[i]})\n`;
